@@ -2,7 +2,7 @@
 /build
 dataset.csv
 regression.py
-aplikasi.spec
 /__pycache__
 .DS_Store
 dist.zip
+selftest_report.txt

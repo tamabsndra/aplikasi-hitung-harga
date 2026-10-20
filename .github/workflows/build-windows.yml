@@ -1,0 +1,87 @@
+name: Build Windows
+
+on:
+  push:
+    branches: [main, test]
+  pull_request:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-build.txt
+
+      - name: Build with PyInstaller
+        run: python -m PyInstaller aplikasi.spec --noconfirm
+
+      - name: Smoke test the frozen executable
+        shell: pwsh
+        run: |
+          & "dist\aplikasi\aplikasi.exe" --selftest selftest_report.txt
+          $code = $LASTEXITCODE
+          if (Test-Path selftest_report.txt) { Get-Content selftest_report.txt }
+          if ($code -ne 0) { Write-Error "Selftest failed with exit code $code"; exit 1 }
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+          if ($LASTEXITCODE -ne 0) { Write-Error "ISCC failed with exit code $LASTEXITCODE"; exit 1 }
+          if (-not (Test-Path "dist\Aplikasi-Setup.exe")) { Write-Error "installer not produced"; exit 1 }
+          $size = (Get-Item "dist\Aplikasi-Setup.exe").Length
+          if ($size -lt 1MB) { Write-Error "installer suspiciously small: $size bytes"; exit 1 }
+          Write-Host "Installer built: $size bytes"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aplikasi-windows
+          path: dist/aplikasi/
+          if-no-files-found: error
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aplikasi-windows-installer
+          path: dist/Aplikasi-Setup.exe
+          if-no-files-found: error
+
+      - name: Package zip for release
+        if: github.event_name == 'release'
+        shell: pwsh
+        run: Compress-Archive -Path dist/aplikasi/* -DestinationPath aplikasi-windows.zip -Force
+
+      - name: Attach zip to release
+        if: github.event_name == 'release'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" aplikasi-windows.zip --clobber
+
+      - name: Attach installer to release
+        if: github.event_name == 'release'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" dist/Aplikasi-Setup.exe --clobber
