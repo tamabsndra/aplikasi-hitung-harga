@@ -80,10 +80,10 @@ Hasilnya ada di folder `dist\aplikasi`. Bagikan SELURUH isi folder itu, bukan ha
 ### Verifikasi hasil build
 
 ```
-dist\aplikasi\aplikasi.exe --selftest selftest_report.txt
+start "" /wait dist\aplikasi\aplikasi.exe --selftest selftest_report.txt
 ```
 
-Perintah itu memeriksa library, font, folder output, dan analisis PDF. Keluar dengan kode 0 kalau semua lolos, dan menulis laporan ke `selftest_report.txt`.
+Pakai `start /wait` karena aplikasi ini berupa GUI (tanpa konsol); kalau dipanggil langsung, cmd/PowerShell tidak menunggu prosesnya selesai sehingga kode keluarnya tidak terbaca. Perintah itu memeriksa library, font, folder output, dan analisis PDF, menulis laporan ke `selftest_report.txt`, dan keluar dengan kode 0 kalau semua lolos.
 
 ## Catatan font
 

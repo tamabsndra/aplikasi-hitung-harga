@@ -25,7 +25,7 @@ if errorlevel 1 (
 )
 
 echo [3/3] Menguji hasil build...
-dist\aplikasi\aplikasi.exe --selftest selftest_report.txt
+start "" /wait dist\aplikasi\aplikasi.exe --selftest selftest_report.txt
 if errorlevel 1 (
     echo Selftest GAGAL. Isi laporan:
     type selftest_report.txt

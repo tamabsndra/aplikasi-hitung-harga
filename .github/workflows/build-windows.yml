@@ -35,10 +35,9 @@ jobs:
       - name: Smoke test the frozen executable
         shell: pwsh
         run: |
-          & "dist\aplikasi\aplikasi.exe" --selftest selftest_report.txt
-          $code = $LASTEXITCODE
+          $proc = Start-Process -FilePath "dist\aplikasi\aplikasi.exe" -ArgumentList "--selftest", "selftest_report.txt" -Wait -PassThru
           if (Test-Path selftest_report.txt) { Get-Content selftest_report.txt }
-          if ($code -ne 0) { Write-Error "Selftest failed with exit code $code"; exit 1 }
+          if ($proc.ExitCode -ne 0) { Write-Error "Selftest failed with exit code $($proc.ExitCode)"; exit 1 }
 
       - name: Install Inno Setup
         run: choco install innosetup --no-progress -y
